@@ -1,0 +1,1049 @@
+<title>CSO 界面复刻</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #eef0f2;
+    --surface: #ffffff;
+    --fg: #1f2328;
+    --muted: #5b6570;
+    --line: #d7dce1;
+    --accent: #8c1515;
+    --font-display: "Noto Serif SC", "Songti SC", "STSong", serif;
+    --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+    --cardinal: #8c1515;
+    --cardinal-dark: #6b1010;
+    --cool-grey: #4d4f53;
+    --border: #e5e7eb;
+    --app-text: #1f2937;
+    --app-soft: #f8f8f8;
+    --app-panel: #f4f4f4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101418;
+      --surface: #1a1f24;
+      --fg: #ecebe7;
+      --muted: #a0a6ad;
+      --line: #2c333a;
+      --accent: #f59e0b;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101418;
+    --surface: #1a1f24;
+    --fg: #ecebe7;
+    --muted: #a0a6ad;
+    --line: #2c333a;
+    --accent: #f59e0b;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1720px;
+    margin: 0 auto;
+    padding-block: 40px 72px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  a { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 6vw, 4.4rem);
+    line-height: 1.05;
+    letter-spacing: -.03em;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  .dek {
+    max-width: 54rem;
+    font-size: clamp(1rem, 1.9vw, 1.16rem);
+    line-height: 1.65;
+    margin: 0 0 24px;
+    color: var(--fg);
+  }
+  .meta-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .meta-pill {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 10px;
+  }
+  .section { margin-top: 52px; }
+  h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 2.8vw, 1.9rem);
+    margin: 0 0 14px;
+    line-height: 1.3;
+  }
+  .section > p { margin: 0 0 18px; color: var(--muted); max-width: 70ch; }
+
+  /* ===== Browser frame ===== */
+  .app-shell {
+    background: #dfe3e8;
+    border: 1px solid #c9ced5;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 30px 90px rgba(15, 23, 42, .18), 0 4px 14px rgba(15, 23, 42, .08);
+  }
+  .browser-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #f1f3f5;
+    border-bottom: 1px solid #d7dce1;
+  }
+  .dots { display: flex; gap: 6px; }
+  .dots span { width: 11px; height: 11px; border-radius: 50%; background: #c9ced5; }
+  .dots span:nth-child(1) { background: #ff5f57; }
+  .dots span:nth-child(2) { background: #febc2e; }
+  .dots span:nth-child(3) { background: #28c840; }
+  .url-pill {
+    flex: 1;
+    max-width: 520px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid #d7dce1;
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: #5b6570;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .browser-brand {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    color: #8a929b;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  /* ===== The app itself (light-only, faithful to force_light_mode_js) ===== */
+  .vbt-app {
+    background: #fff;
+    color: var(--app-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    padding: 0 2.25rem 0;
+  }
+  .vbt-app * { box-sizing: border-box; }
+  .vbt-header {
+    background: linear-gradient(135deg, var(--cardinal) 0%, var(--cardinal-dark) 100%);
+    color: #fff;
+    padding: 1.3rem 1.75rem;
+    border-radius: 12px;
+    margin-top: 1.25rem;
+    box-shadow: 0 4px 6px rgba(140, 21, 21, .2);
+  }
+  .vbt-header h1 {
+    font-family: inherit;
+    font-size: 2.2rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0;
+    margin: 0 0 .35rem;
+    color: #fff;
+  }
+  .vbt-header p { margin: 0; font-size: 1.2rem; color: #fff; opacity: .9; }
+  .vbt-intro {
+    background: #f8f8f8;
+    border-top: 3px solid var(--cardinal);
+    padding: .95rem 1.35rem;
+    margin: .95rem 0 1.9rem;
+    border-radius: 8px;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: #2c3e50;
+  }
+  .vbt-intro p { margin: .45rem 0; }
+  .vbt-intro p:first-child { margin-top: 0; }
+  .vbt-intro p:last-child { margin-bottom: 0; }
+  .vbt-intro strong { font-weight: 700; }
+  .vbt-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+  .vbt-chat-col { min-width: 0; }
+  .vbt-chatbot {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    height: 650px;
+    overflow-y: auto;
+    padding: 1rem 1.15rem;
+  }
+  .vbt-chatbot::-webkit-scrollbar { width: 8px; }
+  .vbt-chatbot::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 999px; }
+  .msg { display: flex; gap: .7rem; margin-bottom: 1.15rem; align-items: flex-start; }
+  .msg.user { justify-content: flex-end; }
+  .avatar {
+    flex: 0 0 30px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: .9rem;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+  }
+  .msg.assistant .avatar { background: #fdf2f2; border-color: #f3d6d6; }
+  .msg .bubble {
+    max-width: 80%;
+    background: #f3f4f6;
+    border-radius: 10px;
+    padding: .55rem .85rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #111827;
+  }
+  .msg.assistant .body { max-width: 88%; min-width: 0; }
+  .msg.assistant .role {
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--cardinal);
+    margin-bottom: .2rem;
+  }
+  .msg.assistant .text { font-size: 1rem; line-height: 1.65; color: #111827; }
+  .msg.assistant .text p { margin: 0 0 .6rem; }
+  .msg.assistant .text p:last-child { margin-bottom: 0; }
+  .msg.assistant .text ul { margin: .2rem 0 .7rem; padding-left: 1.2rem; }
+  .msg.assistant .text li { margin: .1rem 0; }
+  .thought { margin: .1rem 0 .7rem; font-size: .82rem; color: #6b7280; }
+  .thought summary { cursor: pointer; color: var(--cardinal); font-weight: 600; }
+  .thought div {
+    margin-top: .35rem;
+    padding: .5rem .7rem;
+    background: #faf7f7;
+    border-left: 2px solid var(--cardinal);
+    border-radius: 4px;
+    line-height: 1.5;
+  }
+  .typing { display: inline-block; color: var(--cardinal); animation: blink 1s steps(2, start) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .typing, .agent-badge.running { animation: none; }
+  }
+  sup.claim-ref {
+    display: inline-block;
+    min-width: 1.15em;
+    padding: 0 .28em;
+    margin-left: .12em;
+    border-radius: .55em;
+    background: var(--cardinal);
+    color: #fff;
+    font-size: .66em;
+    font-weight: 700;
+    line-height: 1.5;
+    text-align: center;
+    cursor: pointer;
+    vertical-align: super;
+    user-select: none;
+  }
+  sup.claim-ref:hover { background: #b83a3a; }
+  sup.claim-ref.active { outline: 2px solid var(--cardinal); outline-offset: 1px; }
+  sup.claim-ref.unverified { background: #b0842b; }
+  sup.claim-ref.missing {
+    background: transparent;
+    color: #b83a3a;
+    border: 1px dashed #b83a3a;
+    font-weight: 600;
+  }
+
+  .vbt-input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(190px, 1fr);
+    gap: .65rem;
+    margin-top: .65rem;
+  }
+  .vbt-input-row textarea {
+    width: 100%;
+    min-height: 66px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: .55rem .7rem;
+    font: inherit;
+    font-size: 1.02rem;
+    line-height: 1.5;
+    resize: vertical;
+    color: #111827;
+    background: #fff;
+  }
+  .vbt-input-row textarea:focus { outline: none; border-color: var(--cardinal); box-shadow: 0 0 0 1px var(--cardinal); }
+  .send-col { display: flex; flex-direction: column; gap: .45rem; min-width: 0; }
+  .btn {
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: .42rem .8rem;
+    font: inherit;
+    font-size: .95rem;
+    line-height: 1.4;
+    cursor: pointer;
+    background: #fff;
+    color: #111827;
+  }
+  .btn-primary { background: var(--cardinal); color: #fff; }
+  .btn-primary:hover { background: var(--cardinal-dark); }
+  .btn-stop { background: #dc3545; color: #fff; font-weight: 600; }
+  .btn-stop:hover { background: #c82333; }
+  .btn-secondary { background: #fff; border-color: var(--cardinal); color: var(--cardinal); }
+  .btn-secondary:hover { background: var(--cardinal); color: #fff; }
+  .btn-neutral { background: #fff; border-color: #d1d5db; color: #374151; }
+  .btn-neutral:hover { background: #f3f4f6; }
+  .btn-sm { font-size: .8rem; padding: .3rem .55rem; border-radius: 6px; }
+  .model-select { display: flex; flex-direction: column; gap: .15rem; font-size: .72rem; color: var(--cool-grey); }
+  .model-select select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: .3rem .4rem;
+    font: inherit;
+    font-size: .82rem;
+    background: #fff;
+    color: #111827;
+  }
+  .agent-status {
+    background: #fff9f0;
+    border-left: 3px solid var(--cardinal);
+    padding: .65rem .85rem;
+    margin: .55rem 0;
+    border-radius: 6px;
+    font-size: .9rem;
+    color: var(--cool-grey);
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .35rem;
+  }
+  .agent-status.active { background: #fff4e6; }
+  .agent-status-header {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--cardinal);
+    margin-right: .45rem;
+  }
+  .agent-badge {
+    display: inline-block;
+    padding: .25rem .65rem;
+    border-radius: 12px;
+    font-size: .86rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .agent-badge.running {
+    background: #8b1a1a;
+    color: #fff;
+    animation: subtle-pulse 2s ease-in-out infinite;
+  }
+  .agent-badge.complete { background: #d4edda; color: #155724; }
+  .agent-badge.error { background: #f5c6cb; color: #721c24; }
+  @keyframes subtle-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .7; } }
+  .try-example { color: var(--cool-grey); margin: .9rem 0 .35rem; font-size: 1rem; font-weight: 700; }
+  .example-row { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .example-btn {
+    margin: 0;
+    border: 1px solid var(--cardinal);
+    color: var(--cardinal);
+    background: #fff;
+    border-radius: 6px;
+    padding: .32rem .55rem;
+    font: inherit;
+    font-size: .8rem;
+    line-height: 1.4;
+    cursor: pointer;
+    text-align: left;
+  }
+  .example-btn:hover { background: var(--cardinal); color: #fff; }
+  .action-row { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+
+  /* ===== Sidebar ===== */
+  .activity-panel {
+    background: var(--app-panel);
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: .9rem;
+    min-width: 0;
+  }
+  .sidebar-header {
+    color: var(--cardinal);
+    font-weight: 600;
+    border-bottom: 2px solid var(--cardinal);
+    padding-bottom: .4rem;
+    margin-bottom: .75rem;
+    font-size: .92rem;
+  }
+  .ev-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-left: 3px solid var(--cardinal);
+    border-radius: 8px;
+    padding: .55rem .7rem;
+  }
+  .ev-id {
+    font: 700 .66rem ui-monospace, SFMono-Regular, Consolas, monospace;
+    letter-spacing: .06em;
+    color: var(--cardinal);
+    text-transform: uppercase;
+  }
+  .ev-text { font-size: .84rem; font-weight: 600; margin: .12rem 0 .18rem; line-height: 1.5; }
+  .ev-meta { font-size: .7rem; color: #6b6b6b; margin-bottom: .4rem; }
+  .ev-list { margin: 0; padding-left: .95rem; font-size: .76rem; line-height: 1.45; }
+  .ev-list li { margin: .3rem 0; overflow-wrap: anywhere; }
+  .ev-list code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .92em; }
+  .ev-kind {
+    display: inline-block;
+    font-size: .8em;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #6b6b6b;
+    margin-right: .25rem;
+  }
+  .ev-note { display: block; color: #4d4f53; }
+  .ev-dim { color: #6b6b6b; }
+  .ev-badge {
+    display: inline-block;
+    font-size: .76em;
+    padding: 0 .38em;
+    margin-left: .3rem;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .ev-badge.verified { color: #0c7a0c; border: 1px solid #9ed09e; }
+  .ev-badge.external { color: #6b6b6b; border: 1px solid #d6d6d6; }
+  .ev-badge.unresolved { color: #b83a3a; border: 1px solid #e0a8a8; }
+  .ev-empty { font-size: .8rem; color: #6b6b6b; line-height: 1.5; padding: .3rem 0 .2rem; }
+  .ev-cards { display: flex; flex-direction: column; gap: .55rem; }
+  .ev-card-static { box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .ev-card-static .ev-id { display: flex; align-items: center; gap: .35rem; margin-bottom: .1rem; }
+  .ev-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.35em;
+    height: 1.35em;
+    padding: 0 .3em;
+    border-radius: 999px;
+    background: var(--cardinal);
+    color: #fff;
+    font-size: .95em;
+    letter-spacing: 0;
+  }
+  .ev-card-weak { border-left-color: #b0842b; }
+  .ev-flag { margin-left: auto; color: #8a6a1f; text-transform: none; letter-spacing: 0; font-weight: 600; }
+  .ev-none { color: #6b6b6b; font-style: italic; }
+
+  .vbt-accordion {
+    margin-top: .9rem;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: .6rem .75rem;
+  }
+  .vbt-accordion summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--cardinal);
+    font-size: .84rem;
+    line-height: 1.4;
+  }
+  .vbt-accordion[open] summary { margin-bottom: .6rem; }
+  .vbt-accordion .body { font-size: .78rem; color: #4d4f53; }
+  .activity-log {
+    font-size: .8rem;
+    line-height: 1.5;
+    max-height: 420px;
+    overflow-y: auto;
+    padding: .15rem .15rem 0;
+    margin-bottom: .9rem;
+  }
+  .activity-log .entry { margin-bottom: .65rem; }
+  .activity-log .line1 { display: flex; gap: .3rem; flex-wrap: wrap; align-items: baseline; }
+  .activity-log .ts { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .72rem; color: #6b7280; }
+  .activity-log .title { font-weight: 600; color: #1f2937; }
+  .activity-log .detail { font-style: italic; color: #6b7280; font-size: .76rem; margin-left: 1.4rem; }
+  .division-legend {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: .8rem .9rem;
+    font-size: .8rem;
+    line-height: 1.55;
+    margin-top: .9rem;
+  }
+  .division-legend strong { color: #1f2937; }
+  .division-legend small { color: #6b7280; }
+  .division-legend .div { margin-top: .55rem; }
+  .active-users {
+    background: linear-gradient(135deg, var(--cardinal) 0%, var(--cardinal-dark) 100%);
+    color: #fff;
+    border-radius: 8px;
+    padding: .6rem .85rem;
+    margin-top: .9rem;
+    text-align: center;
+    font-size: .84rem;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(140,21,21,.2);
+  }
+  .files-header {
+    color: var(--cardinal);
+    font-weight: 600;
+    border-bottom: 2px solid var(--cardinal);
+    padding-bottom: .35rem;
+    margin-bottom: .55rem;
+    font-size: .82rem;
+  }
+  .file-list { display: flex; flex-direction: column; gap: .35rem; }
+  .file-item {
+    display: flex;
+    gap: .4rem;
+    align-items: baseline;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: .72rem;
+    color: #374151;
+    overflow-wrap: anywhere;
+  }
+  .file-item span:first-child { color: #8a6a1f; }
+  .runs-table { width: 100%; border-collapse: collapse; font-size: .74rem; }
+  .runs-table th {
+    text-align: left;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #4d4f53;
+    border-bottom: 1px solid #c0c0c0;
+    padding: .3rem .35rem;
+  }
+  .runs-table td { padding: .3rem .35rem; border-bottom: 1px solid #ededed; vertical-align: top; }
+  .vbt-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: .7rem 0 1.1rem;
+    color: #6b7280;
+    font-size: .7rem;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 1.4rem;
+  }
+  .vbt-footer .right { display: flex; gap: .8rem; align-items: center; }
+
+  /* ===== Outer page sections ===== */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    min-width: 0;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 1rem; line-height: 1.45; }
+  .card p { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.65; }
+  .card .tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; min-width: 620px; }
+  th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    background: var(--surface);
+  }
+  tr:last-child td { border-bottom: 0; }
+  td { font-size: .9rem; line-height: 1.6; }
+  td code { font-family: var(--font-mono); font-size: .85em; background: rgba(140,21,21,.07); padding: 1px 5px; border-radius: 4px; }
+  footer {
+    margin-top: 56px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: .84rem;
+    line-height: 1.7;
+  }
+  footer p { margin: 0 0 6px; }
+  footer a { color: var(--fg); text-decoration-color: var(--line); text-underline-offset: 3px; }
+
+  @media (max-width: 1100px) {
+    .vbt-grid { grid-template-columns: 1fr; }
+    .activity-panel { margin-top: .2rem; }
+  }
+  @media (max-width: 760px) {
+    .page { padding-block: 28px 56px; }
+    .vbt-app { padding: 0 1rem; }
+    .vbt-header { padding: 1rem 1.1rem; }
+    .vbt-header h1 { font-size: 1.6rem; }
+    .vbt-header p { font-size: .92rem; }
+    .vbt-intro { font-size: .9rem; }
+    .vbt-chatbot { height: 520px; }
+    .vbt-input-row { grid-template-columns: 1fr; }
+    .send-col { flex-direction: row; flex-wrap: wrap; align-items: end; }
+    .model-select { flex: 1; min-width: 140px; }
+    .msg.assistant .body { max-width: 92%; }
+    .msg .bubble { max-width: 88%; }
+    .browser-brand { display: none; }
+  }
+</style>
+
+<main class="page">
+  <header>
+    <p class="eyebrow">UI Replica · Gradio · light mode</p>
+    <h1>CSO 界面复刻</h1>
+    <p class="dek">基于 <code>gradio_cso_app.py</code> 的静态复刻。布局、文案、颜色和 CSS 类来自仓库。对话和证据内容是示意，不是真实运行结果。</p>
+    <div class="meta-strip">
+      <span class="meta-pill">header gradient #8C1515 → #6B1010</span>
+      <span class="meta-pill">theme: gr.themes.Base · spacing sm</span>
+      <span class="meta-pill">force_light_mode_js</span>
+      <span class="meta-pill">Chatbot height 650</span>
+      <span class="meta-pill">scale 3 : 1</span>
+    </div>
+  </header>
+
+  <section class="section" style="margin-top:26px;">
+    <div class="app-shell">
+      <div class="browser-bar">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="url-pill">127.0.0.1:7860</div>
+        <div class="browser-brand">Gradio</div>
+      </div>
+
+      <div class="vbt-app">
+        <div class="vbt-header">
+          <h1>The Virtual Biotech</h1>
+          <p>CSO Interface — AI-powered drug target discovery with multi-agent orchestration</p>
+        </div>
+
+        <div class="vbt-intro">
+          <p>The Virtual Biotech is a multi-agent AI system for therapeutic research and innovation in drug discovery that coordinates teams of agents organized into R&amp;D divisions. These divisions include: <strong>Target Identification and Prioritization</strong>, <strong>Target Safety</strong>, <strong>Clinical Officers</strong>, and <strong>Modality Selection</strong>.</p>
+          <p>Each query is intelligently routed via the virtual CSO to relevant divisions of AI scientist agents who analyze data from Open Targets, CELLxGENE Census, ClinicalTrials.gov, Tahoe-100M, and other biomedical databases. To get started, say <strong>“Introduce yourself and your role”</strong>.</p>
+          <p><small><em>This UI provides interactive access to the system's analytical capabilities. Queries requiring significant computational resources can also be submitted through the command line interface of the system, which supports asynchronous execution over longer time horizons.</em></small></p>
+        </div>
+
+        <div class="vbt-grid">
+          <div class="vbt-chat-col">
+            <div class="vbt-chatbot">
+              <div class="msg user">
+                <div class="bubble">Introduce yourself and your role</div>
+                <div class="avatar">🧑‍🔬</div>
+              </div>
+
+              <div class="msg assistant">
+                <div class="avatar">🤖</div>
+                <div class="body">
+                  <div class="role">CSO</div>
+                  <details class="thought" open>
+                    <summary>Thought for 6s</summary>
+                    <div>Introduce the four R&amp;D divisions, explain the routing and review loop, and point the scientist to the evidence markers.</div>
+                  </details>
+                  <div class="text">
+                    <p>I am the Chief Scientific Officer of this virtual biotech. I coordinate four R&amp;D divisions: <strong>Target Identification and Prioritization</strong>, <strong>Target Safety</strong>, <strong>Clinical Officers</strong>, and <strong>Modality Selection</strong>.</p>
+                    <p>For each question I write a plan, route work to specialist agents, and ask the Scientific Reviewer to check the evidence before I report back. Numbered markers show what backs a claim.<sup class="claim-ref" data-claim="C1">1</sup></p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="msg user">
+                <div class="bubble">Evaluate TREM2 as a target for Alzheimer's</div>
+                <div class="avatar">🧑‍🔬</div>
+              </div>
+
+              <div class="msg assistant">
+                <div class="avatar">🤖</div>
+                <div class="body">
+                  <div class="role">CSO</div>
+                  <details class="thought">
+                    <summary>Thought for 14s</summary>
+                    <div>Route to Target ID, Target Safety, and Clinical Officers. Need genetic support, known TREM2 liabilities, and clinical precedence before a modality recommendation.</div>
+                  </details>
+                  <div class="text">
+                    <p>TREM2 is a genetically supported Alzheimer's target, but the safety picture decides the modality. I have routed the question to three divisions.</p>
+                    <p><strong>Target ID.</strong> The genomics analyst is checking GWAS, L2G, and QTL evidence for TREM2 in AD.<sup class="claim-ref active" data-claim="C2">2</sup></p>
+                    <p><strong>Target Safety.</strong> The FDA safety officer is reviewing known TREM2 liabilities and the microglial response.<sup class="claim-ref" data-claim="C3">3</sup></p>
+                    <p><strong>Clinical Officers.</strong> Trial matching is checking recruiting studies for TREM2-directed antibodies.</p>
+                    <p>I will report back when the reviewer signs off. <span class="typing">▍</span></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="vbt-input-row">
+              <textarea rows="2" placeholder="Ask about drug targets, safety, or modalities..."></textarea>
+              <div class="send-col">
+                <button class="btn btn-primary" type="button">Send</button>
+                <button class="btn btn-stop" type="button">⏹ Stop</button>
+                <label class="model-select">Model
+                  <select>
+                    <option>Sonnet 4.5 (default)</option>
+                    <option>Sonnet 4.6</option>
+                    <option>Haiku 4.5 (fast)</option>
+                    <option>Opus 4.6</option>
+                    <option>Opus 4.7</option>
+                    <option>Opus 4.8</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="agent-status active">
+              <span class="agent-status-header">Active R&amp;D</span>
+              <span class="agent-badge complete">● Genomics Analyst</span>
+              <span class="agent-badge running">⏳ FDA Safety Officer</span>
+              <span class="agent-badge running">⏳ Trial Matching Specialist</span>
+              <span class="agent-badge complete">● Target Biologist</span>
+            </div>
+
+            <p class="try-example">Try an example:</p>
+            <div class="example-row">
+              <button class="example-btn" type="button">KRAS clinical landscape in pancreatic cancer</button>
+              <button class="example-btn" type="button">Evaluate TREM2 as a target for Alzheimer's</button>
+              <button class="example-btn" type="button">Safety risks of targeting IL-33 in asthma</button>
+            </div>
+
+            <div class="action-row">
+              <button class="btn btn-sm btn-neutral" type="button">Clear conversation</button>
+              <button class="btn btn-sm btn-secondary" type="button">📥 Download Chat</button>
+              <button class="btn btn-sm btn-secondary" type="button">📁 Download Artifacts</button>
+            </div>
+          </div>
+
+          <aside class="activity-panel">
+            <div class="sidebar-header">Evidence</div>
+            <div id="vbt-evidence">
+              <div class="ev-card">
+                <div class="ev-id">C2</div>
+                <div class="ev-text">TREM2 carries rare-variant genetic support in Alzheimer's disease.</div>
+                <div class="ev-meta">genomics-analyst · confidence high</div>
+                <ul class="ev-list">
+                  <li><span class="ev-kind">tool_call</span><code>mcp__genetics__query_gwas_associations</code> <span class="ev-dim">by genomics-analyst</span><span class="ev-badge verified">✓ verified</span></li>
+                  <li><span class="ev-kind">file</span><code>work/genomics-analyst/results/tables/trem2_gwas.csv</code> <span class="ev-dim">line 12</span><span class="ev-badge verified">✓ verified</span></li>
+                  <li><span class="ev-kind">citation</span>PMID: 00000000 <span class="ev-dim">Rare TREM2 variants and AD risk (example)</span><span class="ev-badge external">external ref</span></li>
+                </ul>
+              </div>
+            </div>
+
+            <details class="vbt-accordion">
+              <summary>🔍 All claims &amp; evidence</summary>
+              <div class="body">
+                <div class="ev-cards">
+                  <div class="ev-card ev-card-static">
+                    <div class="ev-id"><span class="ev-num">1</span>C1</div>
+                    <div class="ev-text">The CSO routes each query to R&amp;D divisions and asks the Scientific Reviewer to check the evidence.</div>
+                    <div class="ev-meta">chief-of-staff · confidence high</div>
+                    <ul class="ev-list">
+                      <li><span class="ev-kind">tool_call</span><code>Agent</code> <span class="ev-dim">by chief-of-staff</span><span class="ev-badge verified">✓ verified</span></li>
+                      <li><span class="ev-kind">file</span><code>runs/2026-11-09_trem2_ad/MANIFEST.json</code><span class="ev-badge verified">✓ verified</span></li>
+                    </ul>
+                  </div>
+                  <div class="ev-card ev-card-static">
+                    <div class="ev-id"><span class="ev-num">2</span>C2</div>
+                    <div class="ev-text">TREM2 carries rare-variant genetic support in Alzheimer's disease.</div>
+                    <div class="ev-meta">genomics-analyst · confidence high</div>
+                    <ul class="ev-list">
+                      <li><span class="ev-kind">tool_call</span><code>mcp__genetics__query_gwas_associations</code><span class="ev-badge verified">✓ verified</span></li>
+                      <li><span class="ev-kind">file</span><code>work/genomics-analyst/results/tables/trem2_gwas.csv</code><span class="ev-badge verified">✓ verified</span></li>
+                      <li><span class="ev-kind">citation</span>PMID: 00000000 <span class="ev-badge external">external ref</span></li>
+                    </ul>
+                  </div>
+                  <div class="ev-card ev-card-static ev-card-weak">
+                    <div class="ev-id"><span class="ev-num">3</span>C3<span class="ev-flag">no verified evidence</span></div>
+                    <div class="ev-text">TREM2 agonism carries on-target safety liabilities that need review before a modality decision.</div>
+                    <div class="ev-meta">fda-safety-officer · confidence medium</div>
+                    <ul class="ev-list">
+                      <li><span class="ev-kind">tool_call</span><code>mcp__drug__get_drug_warnings</code><span class="ev-badge verified">✓ verified</span></li>
+                      <li><span class="ev-kind">citation</span>NCT00000000 <span class="ev-dim">example</span><span class="ev-badge external">external ref</span></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <div class="sidebar-header" style="margin-top:1rem;">Agent Activity</div>
+            <div class="activity-log">
+              <div class="entry">
+                <div class="line1"><span>🔄</span><span class="ts">14:02:46</span><span>🤖</span><span class="title">FDA Safety Officer running</span></div>
+                <div class="detail">Reviewing TREM2 warnings and on-target liabilities</div>
+              </div>
+              <div class="entry">
+                <div class="line1"><span>✅</span><span class="ts">14:02:44</span><span>🤖</span><span class="title">Genomics Analyst complete</span></div>
+                <div class="detail">GWAS and L2G evidence filed</div>
+              </div>
+              <div class="entry">
+                <div class="line1"><span>✅</span><span class="ts">14:02:31</span><span>🔧</span><span class="title">query_gwas_associations</span></div>
+                <div class="detail">mcp__genetics · 1,284 associations</div>
+              </div>
+              <div class="entry">
+                <div class="line1"><span>🔄</span><span class="ts">14:02:18</span><span>🤖</span><span class="title">Genomics Analyst running</span></div>
+                <div class="detail">Target ID division · TREM2 / Alzheimer's</div>
+              </div>
+              <div class="entry">
+                <div class="line1"><span>✅</span><span class="ts">14:02:12</span><span>🤖</span><span class="title">Delegated to Target ID</span></div>
+                <div class="detail">genomics-analyst · single-cell-analyst</div>
+              </div>
+              <div class="entry">
+                <div class="line1"><span>✅</span><span class="ts">14:02:11</span><span>🤖</span><span class="title">CSO received query</span></div>
+                <div class="detail">Routing to three divisions</div>
+              </div>
+            </div>
+
+            <div class="division-legend">
+              <strong>R&amp;D Divisions</strong><br><br>
+              🧬 <strong>Target Identification and Prioritization</strong><br>
+              <small>Genetic evidence, functional genomics, single-cell biology</small>
+              <div class="div">🛡️ <strong>Target Safety</strong><br>
+              <small>Pathway context, protein interactions, FDA safety liabilities</small></div>
+              <div class="div">🏥 <strong>Clinical Officers</strong><br>
+              <small>Clinical trials, regulatory safety, cancer genomics</small></div>
+              <div class="div">💊 <strong>Modality Selection</strong><br>
+              <small>Target druggability, medicinal chemistry, modality ranking</small></div>
+            </div>
+
+            <div class="active-users">👥 3 researchers online</div>
+
+            <details class="vbt-accordion">
+              <summary>📁 Generated Files</summary>
+              <div class="body">
+                <div class="files-header">Session Files</div>
+                <div class="file-list">
+                  <div class="file-item"><span>▤</span><span>work/genomics-analyst/results/tables/trem2_gwas.csv</span></div>
+                  <div class="file-item"><span>▤</span><span>work/genomics-analyst/results/figures/trem2_expression.png</span></div>
+                  <div class="file-item"><span>▤</span><span>runs/2026-11-09_trem2_ad/report.md</span></div>
+                </div>
+                <button class="btn btn-sm btn-secondary" type="button" style="margin-top:.5rem;">🔄 Refresh Files</button>
+              </div>
+            </details>
+
+            <details class="vbt-accordion">
+              <summary>🗂 Past Runs</summary>
+              <div class="body">
+                <table class="runs-table">
+                  <thead><tr><th>Run</th><th>Question</th><th>Status</th></tr></thead>
+                  <tbody>
+                    <tr><td>2026-11-09_trem2_ad</td><td>TREM2 / Alzheimer's</td><td>running</td></tr>
+                    <tr><td>2026-11-09_kras_pdac</td><td>KRAS / PDAC</td><td>complete</td></tr>
+                    <tr><td>2026-11-08_il33_asthma</td><td>IL-33 / asthma</td><td>complete</td></tr>
+                  </tbody>
+                </table>
+                <button class="btn btn-sm btn-secondary" type="button" style="margin-top:.5rem;">🔄 Refresh Runs</button>
+              </div>
+            </details>
+          </aside>
+        </div>
+
+        <div class="vbt-footer">
+          <span>Built with Gradio · The Virtual Biotech</span>
+          <span class="right"><span>⚙ Settings</span><span>Use via API</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>哪些是真实的，哪些是示意</h2>
+    <div class="cards">
+      <article class="card">
+        <span class="tag">Real</span>
+        <h3>界面结构与样式</h3>
+        <p>主标题、系统介绍、聊天区、输入行、模型下拉、Agent 状态条、示例按钮、证据面板、活动日志、R&amp;D 分区、在线人数、三个折叠区。颜色和 CSS 类来自仓库。</p>
+      </article>
+      <article class="card">
+        <span class="tag">Real</span>
+        <h3>关键文案</h3>
+        <p>Header、系统介绍、示例问题、分区说明、按钮文字、模型选项。都按 <code>gradio_cso_app.py</code> 和 <code>custom_css</code> 复刻。</p>
+      </article>
+      <article class="card">
+        <span class="tag">Illustrative</span>
+        <h3>对话与证据</h3>
+        <p>CSO 的对话、claim 文本、PMID/NCT 编号、活动日志时间、在线人数、文件名。都是示意，不是实际运行输出。</p>
+      </article>
+      <article class="card">
+        <span class="tag">Not shown</span>
+        <h3>登录页</h3>
+        <p>应用支持密码登录页。这里显示的是 <code>authenticated_by_server=True</code> 的主界面。登录页没有复刻，避免呈现一个假的密码表单。</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>组件对照</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>界面区域</th><th>仓库来源</th><th>关键细节</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>顶部红条</td><td><code>custom_css .main-header</code></td><td>135° 渐变，<code>#8C1515</code> → <code>#6B1010</code>，白字，圆角 12px</td></tr>
+          <tr><td>系统介绍</td><td><code>gr.HTML .system-intro</code></td><td>浅灰底，顶部 3px 红线，圆角 8px</td></tr>
+          <tr><td>聊天区</td><td><code>gr.Chatbot(height=650)</code></td><td>左侧 scale 3，可滚动，支持复制与用户编辑</td></tr>
+          <tr><td>输入行</td><td><code>gr.Textbox</code> + <code>gr.Button</code> + <code>gr.Dropdown</code></td><td>输入框 scale 4，按钮列 scale 1，模型默认 Sonnet 4.5</td></tr>
+          <tr><td>Agent 状态条</td><td><code>render_agent_status_bar()</code></td><td>running 深红脉冲，complete 绿，error 浅红</td></tr>
+          <tr><td>示例问题</td><td><code>ex1 / ex2 / ex3</code></td><td>三个按钮，cardinal 描边</td></tr>
+          <tr><td>证据面板</td><td><code>render_evidence_panel()</code></td><td>claim 卡，tool_call / file / citation 三类证据，verified / external / unresolved 三种徽章</td></tr>
+          <tr><td>全部证据</td><td><code>render_evidence_static()</code></td><td>服务端渲染的卡片，保证无 JS 也能审计</td></tr>
+          <tr><td>活动日志</td><td><code>ActivityTracker.format_markdown()</code></td><td>🔄 running / ✅ complete / ❌ error，带时间戳</td></tr>
+          <tr><td>R&amp;D 分区</td><td><code>.division-legend</code></td><td>四个分区，emoji + 说明</td></tr>
+          <tr><td>在线人数</td><td><code>get_active_users_display()</code></td><td>渐变红底，白字</td></tr>
+          <tr><td>Generated Files</td><td><code>gr.Gallery</code> + <code>gr.File</code></td><td>会话工作区的图和文件</td></tr>
+          <tr><td>Past Runs</td><td><code>load_index() / render_index_html()</code></td><td>每个 run 目录的索引表</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>界面状态</h2>
+    <p>这个复刻展示的是"第二次提问正在运行"的状态：聊天区有流式光标，Agent 状态条有 2 个 running 徽章，证据面板显示用户刚点击的 C2 claim。</p>
+    <div class="cards">
+      <article class="card">
+        <span class="tag">Running</span>
+        <h3>你看到的是运行中</h3>
+        <p>Stop 按钮可见。输入框可编辑。活动日志最新条目是 running。</p>
+      </article>
+      <article class="card">
+        <span class="tag">Evidence</span>
+        <h3>点击编号会换卡</h3>
+        <p>点击对话里的 1、2、3，右侧证据卡会切换到对应 claim。这是原应用的 R2.3 功能。</p>
+      </article>
+      <article class="card">
+        <span class="tag">Accordion</span>
+        <h3>折叠区可以展开</h3>
+        <p>"All claims &amp; evidence"、"Generated Files"、"Past Runs" 都是原生 details，点开可见内容。</p>
+      </article>
+    </div>
+  </section>
+
+  <footer>
+    <p>资料来源：</p>
+    <p><a href="https://github.com/harrisongzhang/TheVirtualBiotech/blob/main/gradio_cso_app.py">gradio_cso_app.py</a> · <a href="https://github.com/harrisongzhang/TheVirtualBiotech/blob/main/src/utils/claim_ui.py">claim_ui.py</a> · <a href="https://github.com/harrisongzhang/TheVirtualBiotech">The Virtual Biotech</a></p>
+  </footer>
+</main>
+
+<script>
+  (function () {
+    var CLAIMS = {
+      C1: {
+        id: "C1",
+        text: "The CSO routes each query to R&D divisions and asks the Scientific Reviewer to check the evidence.",
+        agent: "chief-of-staff",
+        confidence: "high",
+        evidence: [
+          { kind: "tool_call", tool: "Agent", agent: "chief-of-staff", status: "verified" },
+          { kind: "file", path: "runs/2026-11-09_trem2_ad/MANIFEST.json", status: "verified" }
+        ]
+      },
+      C2: {
+        id: "C2",
+        text: "TREM2 carries rare-variant genetic support in Alzheimer's disease.",
+        agent: "genomics-analyst",
+        confidence: "high",
+        evidence: [
+          { kind: "tool_call", tool: "mcp__genetics__query_gwas_associations", agent: "genomics-analyst", status: "verified" },
+          { kind: "file", path: "work/genomics-analyst/results/tables/trem2_gwas.csv", line: "12", status: "verified" },
+          { kind: "citation", ref: "PMID: 00000000", title: "Rare TREM2 variants and AD risk (example)", status: "external" }
+        ]
+      },
+      C3: {
+        id: "C3",
+        text: "TREM2 agonism carries on-target safety liabilities that need review before a modality decision.",
+        agent: "fda-safety-officer",
+        confidence: "medium",
+        evidence: [
+          { kind: "tool_call", tool: "mcp__drug__get_drug_warnings", agent: "fda-safety-officer", status: "verified" },
+          { kind: "citation", ref: "NCT00000000", title: "example", status: "external" }
+        ]
+      }
+    };
+    var LABEL = { verified: "✓ verified", external: "external ref", unresolved: "not on record" };
+
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+        return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c];
+      });
+    }
+
+    function row(ev) {
+      var what = "";
+      if (ev.kind === "tool_call") {
+        what = "<code>" + esc(ev.tool) + "</code>" + (ev.agent ? ' <span class="ev-dim">by ' + esc(ev.agent) + "</span>" : "");
+      } else if (ev.kind === "citation") {
+        what = esc(ev.ref) + (ev.title ? ' <span class="ev-dim">' + esc(ev.title) + "</span>" : "");
+      } else {
+        what = "<code>" + esc(ev.path) + "</code>" + (ev.line ? ' <span class="ev-dim">line ' + esc(ev.line) + "</span>" : "");
+      }
+      return '<li><span class="ev-kind">' + esc(ev.kind) + "</span>" + what +
+        '<span class="ev-badge ' + esc(ev.status) + '">' + LABEL[ev.status] + "</span></li>";
+    }
+
+    function render(cid) {
+      var panel = document.getElementById("vbt-evidence");
+      var c = CLAIMS[cid];
+      if (!panel || !c) return;
+      panel.innerHTML =
+        '<div class="ev-card">' +
+          '<div class="ev-id">' + esc(c.id) + "</div>" +
+          '<div class="ev-text">' + esc(c.text) + "</div>" +
+          '<div class="ev-meta">' + esc(c.agent) + " · confidence " + esc(c.confidence) + "</div>" +
+          '<ul class="ev-list">' + c.evidence.map(row).join("") + "</ul>" +
+        "</div>";
+      panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    document.querySelectorAll(".claim-ref[data-claim]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        document.querySelectorAll(".claim-ref.active").forEach(function (n) { n.classList.remove("active"); });
+        el.classList.add("active");
+        render(el.dataset.claim);
+      });
+    });
+  })();
+</script>
