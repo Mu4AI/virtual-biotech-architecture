@@ -1,0 +1,830 @@
+<title>从终端到数据</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f3ec;
+    --surface: #fffdf7;
+    --surface-2: #ece7db;
+    --fg: #1b1d21;
+    --muted: #5f646d;
+    --line: #d5cec0;
+    --accent: #b45309;
+    --sdk: #0f766e;
+    --runtime: #6d28d9;
+    --tool: #15803d;
+    --model: #1d4ed8;
+    --term-bg: #0c1016;
+    --term-bar: #151a22;
+    --term-line: #2a303b;
+    --term-fg: #d7dde8;
+    --term-dim: #7d8797;
+    --term-green: #7ee787;
+    --term-amber: #f0b429;
+    --term-cyan: #67e8f9;
+    --term-violet: #c4b5fd;
+    --term-red: #ff7b72;
+    --font-display: "Noto Serif SC", "Songti SC", "STSong", serif;
+    --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111316;
+      --surface: #1a1d22;
+      --surface-2: #23272e;
+      --fg: #ecebe7;
+      --muted: #a4a7ae;
+      --line: #343943;
+      --accent: #f59e0b;
+      --sdk: #2dd4bf;
+      --runtime: #a78bfa;
+      --tool: #4ade80;
+      --model: #60a5fa;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111316;
+    --surface: #1a1d22;
+    --surface-2: #23272e;
+    --fg: #ecebe7;
+    --muted: #a4a7ae;
+    --line: #343943;
+    --accent: #f59e0b;
+    --sdk: #2dd4bf;
+    --runtime: #a78bfa;
+    --tool: #4ade80;
+    --model: #60a5fa;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-block: 42px 72px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  a { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.6rem, 7.4vw, 5rem);
+    line-height: 1.04;
+    letter-spacing: -.03em;
+    margin: 0 0 18px;
+    text-wrap: balance;
+  }
+  .dek {
+    max-width: 50rem;
+    font-size: clamp(1.02rem, 2vw, 1.22rem);
+    line-height: 1.65;
+    margin: 0 0 26px;
+  }
+  .layer-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .ls-item {
+    background: var(--surface);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .ls-k {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: .12em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .ls-item strong { font-size: 1rem; line-height: 1.4; }
+  .ls-d { font-size: .84rem; color: var(--muted); line-height: 1.45; }
+  .section { margin-top: 60px; }
+  .section-head { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+  h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 3.2vw, 2.05rem);
+    letter-spacing: -.01em;
+    margin: 0;
+    line-height: 1.25;
+  }
+  .section-head p { margin: 0; color: var(--muted); max-width: 66ch; font-size: .96rem; }
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .terminal {
+    background: var(--term-bg);
+    border: 1px solid var(--term-line);
+    border-radius: 12px;
+    overflow: hidden;
+    color: var(--term-fg);
+    min-width: 0;
+  }
+  .term-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: var(--term-bar);
+    border-bottom: 1px solid var(--term-line);
+  }
+  .term-bar span { width: 10px; height: 10px; border-radius: 50%; background: #3b4250; }
+  .term-bar span:nth-child(1) { background: #ff5f57; }
+  .term-bar span:nth-child(2) { background: #febc2e; }
+  .term-bar span:nth-child(3) { background: #28c840; }
+  .term-bar em {
+    margin-left: 8px;
+    font-style: normal;
+    color: var(--term-dim);
+    font-family: var(--font-mono);
+    font-size: 10px;
+  }
+  .term-body {
+    margin: 0;
+    padding: 16px 18px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    line-height: 1.7;
+    color: var(--term-fg);
+  }
+  .t-prompt { color: var(--term-green); }
+  .t-dim { color: var(--term-dim); }
+  .t-agent { color: var(--term-amber); }
+  .t-ok { color: var(--term-green); }
+  .t-warn { color: var(--term-red); }
+  .t-cyan { color: var(--term-cyan); }
+  .t-violet { color: var(--term-violet); }
+  .badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px 8px;
+    margin-bottom: 8px;
+  }
+  .tree {
+    margin: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: .76rem;
+    line-height: 1.7;
+    color: var(--fg);
+  }
+  .figure {
+    margin: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+  }
+  .diagram-scroll { overflow-x: auto; padding-bottom: 6px; }
+  .diagram { display: block; width: 100%; min-width: 1000px; height: auto; }
+  .diagram text { font-family: var(--font-sans); fill: var(--fg); }
+  .diagram .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+  .diagram .box-accent { stroke: var(--accent); stroke-width: 1.8; }
+  .diagram .box-target { stroke: var(--sdk); stroke-width: 1.6; }
+  .diagram .box-safety { stroke: var(--runtime); stroke-width: 1.6; }
+  .diagram .box-clinical { stroke: var(--tool); stroke-width: 1.6; }
+  .diagram .box-modality { stroke: var(--model); stroke-width: 1.6; }
+  .diagram .box-office { stroke: var(--accent); stroke-width: 1.6; }
+  .diagram .flow { fill: none; stroke: var(--fg); stroke-width: 1.4; }
+  .diagram .flow-soft { fill: none; stroke: var(--muted); stroke-width: 1.1; stroke-dasharray: 5 4; }
+  .diagram .rail { fill: none; stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 3 5; }
+  .diagram .t-title { font-size: 17px; font-weight: 700; }
+  .diagram .t-title-sm { font-size: 13px; font-weight: 700; }
+  .diagram .t-box { font-size: 12px; font-weight: 700; }
+  .diagram .t-small { font-size: 10px; font-weight: 700; font-family: var(--font-mono); }
+  .diagram .t-sub { font-size: 10.5px; fill: var(--muted); }
+  .diagram .t-meta { font-size: 9px; fill: var(--muted); font-family: var(--font-mono); }
+  .diagram .t-name { font-size: 9px; font-family: var(--font-mono); font-weight: 500; }
+  .diagram .t-role { font-size: 10px; fill: var(--fg); }
+  .diagram .t-col { font-size: 10px; font-weight: 700; font-family: var(--font-mono); }
+  .diagram .c-accent { fill: var(--accent); }
+  .diagram .c-target { fill: var(--sdk); }
+  .diagram .c-safety { fill: var(--runtime); }
+  .diagram .c-clinical { fill: var(--tool); }
+  .diagram .c-modality { fill: var(--model); }
+  .diagram .chip-svg { fill: var(--surface-2); stroke: var(--line); stroke-width: 1; }
+  .diagram .chip-text { font-size: 9px; font-family: var(--font-mono); fill: var(--fg); }
+  figcaption { margin-top: 12px; font-size: .84rem; color: var(--muted); line-height: 1.6; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; min-width: 680px; }
+  th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    background: var(--surface-2);
+  }
+  tr:last-child td { border-bottom: 0; }
+  td { font-size: .92rem; line-height: 1.6; }
+  td code, p code, li code {
+    font-family: var(--font-mono);
+    font-size: .88em;
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .steps li {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 16px;
+  }
+  .steps .n {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    padding-top: 2px;
+  }
+  .steps strong { display: block; font-size: .95rem; line-height: 1.5; }
+  .steps span { color: var(--muted); font-size: .87rem; line-height: 1.55; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    min-width: 0;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 1rem; line-height: 1.45; }
+  .card p { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.65; }
+  .card .tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 8px;
+  }
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 18px 20px;
+    border-radius: 0 10px 10px 0;
+  }
+  .callout p { margin: 0; font-size: 1.02rem; line-height: 1.7; }
+  .callout strong { color: var(--accent); }
+  footer {
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: .84rem;
+    line-height: 1.7;
+  }
+  footer p { margin: 0 0 6px; }
+  footer a { color: var(--fg); text-decoration-color: var(--line); text-underline-offset: 3px; }
+  @media (max-width: 860px) {
+    .split { grid-template-columns: 1fr; }
+    .layer-strip { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 760px) {
+    .page { padding-block: 30px 56px; }
+    .figure { padding: 12px; }
+    .section { margin-top: 48px; }
+  }
+</style>
+
+<main class="page">
+  <header>
+    <p class="eyebrow">Virtual Biotech · 架构三层</p>
+    <h1>从终端到数据</h1>
+    <p class="dek">你是科学家。你只面对一个终端。终端后面是 11 个 Agent、12 个 MCP server、40GB 数据和一个模型端点。</p>
+    <div class="layer-strip">
+      <div class="ls-item">
+        <span class="ls-k">Layer 0 · 终端</span>
+        <strong>你面对的界面</strong>
+        <span class="ls-d">CLI 对话、澄清问题、进度、报告、verify</span>
+      </div>
+      <div class="ls-item">
+        <span class="ls-k">Layer 1 · 运行层</span>
+        <strong>Agent 编排</strong>
+        <span class="ls-d">CSO、Plan DAG、11 个 Subagent、治理与审计</span>
+      </div>
+      <div class="ls-item">
+        <span class="ls-k">Layer 2 · 后端</span>
+        <strong>工具、数据、模型</strong>
+        <span class="ls-d">12 个 MCP server、40GB 数据、DeepSeek 端点</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>Layer 0 · 你的终端</h2>
+      <p>你看到的是对话。不是 11 个 Agent 的界面。CSO 是唯一和你说话的角色。</p>
+    </div>
+    <div class="split">
+      <div>
+        <span class="badge">示意 transcript · 非实际运行输出</span>
+        <div class="terminal" role="img" aria-label="Virtual Biotech CLI 交互示意">
+          <div class="term-bar"><span></span><span></span><span></span><em>vbt · python run.py</em></div>
+          <pre class="term-body"><span class="t-prompt">$</span> conda activate vbt
+<span class="t-prompt">$</span> python run.py
+
+  <span class="t-agent">Virtual Biotech · Chief Scientific Officer</span>
+  <span class="t-dim">Type /help for commands. Multiline: """</span>
+
+<span class="t-prompt">&gt;</span> 评估 KRAS 在胰腺癌中的靶点价值
+
+<span class="t-agent">[CSO]</span> 开始前确认三个问题：
+  <span class="t-dim">1. 疾病范围：只做 PDAC，还是全部胰腺癌？</span>
+  <span class="t-dim">2. 证据优先级：遗传证据优先，还是临床先例优先？</span>
+  <span class="t-dim">3. 交付物：靶点评估报告，还是试验匹配清单？</span>
+
+<span class="t-prompt">&gt;</span> 只做 PDAC。两类证据都看。先出靶点评估。
+
+<span class="t-agent">[CSO]</span> 计划已写入 Plan DAG。开始委派。
+  <span class="t-cyan">→ genomics-analyst</span>          <span class="t-dim">GWAS / L2G / QTL</span>
+  <span class="t-cyan">→ single-cell-analyst</span>        <span class="t-dim">细胞类型表达</span>
+  <span class="t-cyan">→ fda-safety-officer</span>        <span class="t-dim">靶点安全</span>
+  <span class="t-cyan">→ bio-pathways-ppi-analyst</span>  <span class="t-dim">通路 / PPI</span>
+  <span class="t-cyan">→ target-biologist</span>          <span class="t-dim">结构 / 可成药性</span>
+  <span class="t-cyan">→ medchem-pharmacologist</span>    <span class="t-dim">模态排序</span>
+  <span class="t-violet">→ scientific-reviewer</span>       <span class="t-dim">质量门</span>
+
+<span class="t-ok">[progress]</span> 7/7 agents returned · 41 tool calls · 草稿完成
+
+<span class="t-agent">[CSO]</span> 草稿已生成。Reviewer 发现一个缺口：
+      <span class="t-warn">缺少 KRAS G12D 的临床先例。</span>
+<span class="t-agent">[CSO]</span> 重新委派给 clinical-trialist。
+<span class="t-ok">[progress]</span> clinical-trialist returned · 6 trials · 2 approved
+
+<span class="t-agent">[CSO]</span> 最终报告：<span class="t-cyan">runs/2026-11-09_kras_pdac/report.md</span>
+
+<span class="t-prompt">&gt;</span> /summary
+  <span class="t-dim">Run:</span> 2026-11-09_kras_pdac
+  <span class="t-dim">Agents:</span> 11 registered, 8 used
+  <span class="t-dim">Tool calls:</span> 52
+  <span class="t-dim">Artifacts:</span> 17
+  <span class="t-dim">Cost:</span> $0.41 <span class="t-dim">(按 Anthropic 价表；DeepSeek 实际更低)</span>
+
+<span class="t-prompt">&gt;</span> /done
+  Session saved: sessions/8f3c...</pre>
+        </div>
+      </div>
+      <div>
+        <span class="badge">你得到的产物</span>
+        <pre class="tree">runs/2026-11-09_kras_pdac/
+├─ report.md
+├─ plan.json
+├─ run_manifest.json
+├─ work/
+│  ├─ genomics-analyst/
+│  │  ├─ code/scripts/
+│  │  ├─ data/raw/
+│  │  ├─ data/processed/
+│  │  └─ results/
+│  │     ├─ figures/
+│  │     ├─ tables/
+│  │     └─ reports/
+│  ├─ single-cell-analyst/
+│  ├─ fda-safety-officer/
+│  └─ ...
+└─ logs/
+   ├─ trace.jsonl
+   └─ cost.json</pre>
+        <div class="callout" style="margin-top:14px;">
+          <p><strong>关键：</strong>你只读 <code>report.md</code>。审计的人读 <code>work/</code>、<code>plan.json</code> 和 <code>trace.jsonl</code>。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>Layer 1 · 运行层实际架构</h2>
+      <p>一个 Claude Code 运行时。一个 CSO 主循环。11 个 Subagent 定义。右侧是治理与审计。</p>
+    </div>
+    <figure class="figure">
+      <div class="diagram-scroll">
+        <svg class="diagram" viewBox="0 0 1200 980" role="img" aria-label="运行层架构：科学家输入进入 CSO 主 Agent，CSO 写 Plan DAG 并委派给 11 个 Subagent，Subagent 通过 MCP 客户端调用 12 个 MCP server，右侧是 hooks、权限、provenance、成本、会话、工作区与 verify">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--fg)"/>
+            </marker>
+          </defs>
+
+          <!-- top -->
+          <rect x="310" y="18" width="360" height="52" rx="8" class="box box-accent"/>
+          <text x="490" y="40" text-anchor="middle" class="t-title-sm">科学家输入</text>
+          <text x="490" y="58" text-anchor="middle" class="t-sub">自然语言问题</text>
+          <path d="M490 70 L490 100" class="flow" marker-end="url(#ar)"/>
+
+          <rect x="270" y="100" width="440" height="90" rx="10" class="box box-accent"/>
+          <text x="490" y="130" text-anchor="middle" class="t-title c-accent">CSO 主 Agent</text>
+          <text x="490" y="152" text-anchor="middle" class="t-sub">澄清 → 写计划 → 委派 → 审查 → 汇总</text>
+          <text x="490" y="172" text-anchor="middle" class="t-meta">max_turns=100 · effort=xhigh</text>
+
+          <rect x="20" y="110" width="220" height="70" rx="8" class="box box-target"/>
+          <text x="36" y="134" class="t-box c-target">Plan DAG</text>
+          <text x="36" y="152" class="t-sub">validate_plan</text>
+          <text x="36" y="168" class="t-sub">reconcile</text>
+          <path d="M270 145 L240 145" class="flow" marker-start="url(#ar)" marker-end="url(#ar)"/>
+
+          <rect x="740" y="110" width="140" height="70" rx="8" class="box box-safety"/>
+          <text x="752" y="132" class="t-small c-safety">Scientific Reviewer</text>
+          <text x="752" y="150" class="t-sub">只读审查</text>
+          <text x="752" y="166" class="t-sub">质疑 → 重派</text>
+          <path d="M710 145 L740 145" class="flow" marker-start="url(#ar)" marker-end="url(#ar)"/>
+
+          <!-- agent bus -->
+          <path d="M490 190 L490 230" class="flow" marker-end="url(#ar)"/>
+          <path d="M100 230 L780 230" class="flow"/>
+          <path d="M100 230 L100 270" class="flow" marker-end="url(#ar)"/>
+          <path d="M270 230 L270 270" class="flow" marker-end="url(#ar)"/>
+          <path d="M440 230 L440 270" class="flow" marker-end="url(#ar)"/>
+          <path d="M610 230 L610 270" class="flow" marker-end="url(#ar)"/>
+          <path d="M780 230 L780 270" class="flow" marker-end="url(#ar)"/>
+          <text x="500" y="222" class="t-meta">Agent 工具 · 按需调用</text>
+
+          <!-- groups -->
+          <rect x="20" y="270" width="160" height="230" rx="8" class="box box-target"/>
+          <text x="30" y="292" class="t-col c-target">Target ID · 3</text>
+          <text x="30" y="318" class="t-name c-target">genomics-analyst</text>
+          <text x="30" y="338" class="t-name c-target">functional-genomics-</text>
+          <text x="30" y="354" class="t-name c-target">analyst</text>
+          <text x="30" y="374" class="t-name c-target">single-cell-analyst</text>
+          <text x="30" y="402" class="t-role">遗传证据</text>
+          <text x="30" y="420" class="t-role">功能基因组</text>
+          <text x="30" y="438" class="t-role">单细胞</text>
+          <text x="30" y="480" class="t-meta">model: specialist</text>
+
+          <rect x="190" y="270" width="160" height="230" rx="8" class="box box-safety"/>
+          <text x="200" y="292" class="t-col c-safety">Target Safety · 2</text>
+          <text x="200" y="318" class="t-name c-safety">fda-safety-officer</text>
+          <text x="200" y="338" class="t-name c-safety">bio-pathways-ppi-</text>
+          <text x="200" y="354" class="t-name c-safety">analyst</text>
+          <text x="200" y="402" class="t-role">FDA 安全</text>
+          <text x="200" y="420" class="t-role">通路 / PPI</text>
+          <text x="200" y="480" class="t-meta">model: specialist</text>
+
+          <rect x="360" y="270" width="160" height="230" rx="8" class="box box-clinical"/>
+          <text x="370" y="292" class="t-col c-clinical">Clinical · 2</text>
+          <text x="370" y="318" class="t-name c-clinical">clinical-trialist</text>
+          <text x="370" y="338" class="t-name c-clinical">trial-matching-</text>
+          <text x="370" y="354" class="t-name c-clinical">specialist</text>
+          <text x="370" y="402" class="t-role">临床试验</text>
+          <text x="370" y="420" class="t-role">患者-试验匹配</text>
+          <text x="370" y="480" class="t-meta">model: specialist</text>
+
+          <rect x="530" y="270" width="160" height="230" rx="8" class="box box-modality"/>
+          <text x="540" y="292" class="t-col c-modality">Modality · 2</text>
+          <text x="540" y="318" class="t-name c-modality">target-biologist</text>
+          <text x="540" y="338" class="t-name c-modality">medchem-</text>
+          <text x="540" y="354" class="t-name c-modality">pharmacologist</text>
+          <text x="540" y="402" class="t-role">靶点生物学</text>
+          <text x="540" y="420" class="t-role">药物开发</text>
+          <text x="540" y="480" class="t-meta">model: specialist</text>
+
+          <rect x="700" y="270" width="160" height="230" rx="8" class="box box-office"/>
+          <text x="710" y="292" class="t-col c-accent">CSO Office · 2</text>
+          <text x="710" y="318" class="t-name c-accent">chief-of-staff</text>
+          <text x="710" y="338" class="t-name c-accent">scientific-</text>
+          <text x="710" y="354" class="t-name c-accent">reviewer</text>
+          <text x="710" y="402" class="t-role">快速尽调</text>
+          <text x="710" y="420" class="t-role">只读审查</text>
+          <text x="710" y="480" class="t-meta">model: haiku</text>
+
+          <!-- MCP client -->
+          <path d="M440 500 L440 560" class="flow" marker-start="url(#ar)" marker-end="url(#ar)"/>
+          <text x="452" y="530" class="t-meta">tool_use / tool_result</text>
+          <rect x="270" y="560" width="440" height="70" rx="8" class="box box-target"/>
+          <text x="490" y="588" text-anchor="middle" class="t-box c-target">MCP 客户端</text>
+          <text x="490" y="608" text-anchor="middle" class="t-sub">stdio / SSE / HTTP · 工具发现 · 12 个 server</text>
+
+          <!-- 12 chips -->
+          <path d="M440 630 L440 660" class="flow" marker-end="url(#ar)"/>
+          <text x="20" y="648" class="t-meta">12 个 MCP server</text>
+          <rect x="20" y="660" width="136" height="32" rx="6" class="chip-svg"/><text x="30" y="681" class="chip-text">expression</text>
+          <rect x="164" y="660" width="136" height="32" rx="6" class="chip-svg"/><text x="174" y="681" class="chip-text">functional_genomics</text>
+          <rect x="308" y="660" width="136" height="32" rx="6" class="chip-svg"/><text x="318" y="681" class="chip-text">genetics</text>
+          <rect x="452" y="660" width="136" height="32" rx="6" class="chip-svg"/><text x="462" y="681" class="chip-text">target</text>
+          <rect x="596" y="660" width="136" height="32" rx="6" class="chip-svg"/><text x="606" y="681" class="chip-text">drug</text>
+          <rect x="740" y="660" width="136" height="32" rx="6" class="chip-svg"/><text x="750" y="681" class="chip-text">single_cell</text>
+          <rect x="20" y="704" width="136" height="32" rx="6" class="chip-svg"/><text x="30" y="725" class="chip-text">association</text>
+          <rect x="164" y="704" width="136" height="32" rx="6" class="chip-svg"/><text x="174" y="725" class="chip-text">disease</text>
+          <rect x="308" y="704" width="136" height="32" rx="6" class="chip-svg"/><text x="318" y="725" class="chip-text">interaction</text>
+          <rect x="452" y="704" width="136" height="32" rx="6" class="chip-svg"/><text x="462" y="725" class="chip-text">pathway</text>
+          <rect x="596" y="704" width="136" height="32" rx="6" class="chip-svg"/><text x="606" y="725" class="chip-text">clinicaltrials</text>
+          <rect x="740" y="704" width="136" height="32" rx="6" class="chip-svg"/><text x="750" y="725" class="chip-text">provenance</text>
+
+          <!-- data -->
+          <path d="M440 736 L440 760" class="flow" marker-end="url(#ar)"/>
+          <path d="M100 760 L800 760" class="flow"/>
+          <path d="M100 760 L100 780" class="flow" marker-end="url(#ar)"/>
+          <path d="M330 760 L330 780" class="flow" marker-end="url(#ar)"/>
+          <path d="M550 760 L550 780" class="flow" marker-end="url(#ar)"/>
+          <path d="M760 760 L760 780" class="flow" marker-end="url(#ar)"/>
+          <text x="810" y="754" class="t-meta">查询</text>
+
+          <rect x="20" y="780" width="200" height="100" rx="8" class="box"/>
+          <text x="34" y="806" class="t-small c-target">Open Targets 25.09</text>
+          <text x="34" y="826" class="t-sub">~40GB parquet</text>
+          <text x="34" y="846" class="t-sub">CC0 · 本地</text>
+          <text x="34" y="866" class="t-sub">靶点 / 疾病 / 表达</text>
+
+          <rect x="230" y="780" width="200" height="100" rx="8" class="box"/>
+          <text x="244" y="806" class="t-small c-target">CELLxGENE Census</text>
+          <text x="244" y="826" class="t-sub">单细胞图谱</text>
+          <text x="244" y="846" class="t-sub">网络查询</text>
+          <text x="244" y="866" class="t-sub">细胞类型表达</text>
+
+          <rect x="440" y="780" width="220" height="100" rx="8" class="box"/>
+          <text x="454" y="806" class="t-small c-target">ClinicalTrials.gov</text>
+          <text x="454" y="826" class="t-sub">cBioPortal / PubMed</text>
+          <text x="454" y="846" class="t-sub">网络查询</text>
+          <text x="454" y="866" class="t-sub">试验 / 结果 / 文献</text>
+
+          <rect x="670" y="780" width="190" height="100" rx="8" class="box"/>
+          <text x="684" y="806" class="t-small c-target">Tahoe-100M</text>
+          <text x="684" y="826" class="t-sub">可选 · ~83GiB</text>
+          <text x="684" y="846" class="t-sub">本地预处理</text>
+          <text x="684" y="866" class="t-sub">扰动响应</text>
+
+          <!-- governance rail -->
+          <text x="920" y="90" class="t-col c-accent">治理与审计</text>
+          <path d="M910 110 L910 820" class="rail"/>
+
+          <rect x="920" y="110" width="260" height="80" rx="8" class="box"/>
+          <text x="934" y="134" class="t-small c-accent">Hooks</text>
+          <text x="934" y="154" class="t-sub">PreToolUse / PostToolUse</text>
+          <text x="934" y="172" class="t-sub">安全拦截 · 轨迹记录</text>
+
+          <rect x="920" y="215" width="260" height="80" rx="8" class="box"/>
+          <text x="934" y="239" class="t-small c-accent">Permissions</text>
+          <text x="934" y="259" class="t-sub">bypassPermissions</text>
+          <text x="934" y="277" class="t-sub">can_use_tool 回调</text>
+
+          <rect x="920" y="320" width="260" height="80" rx="8" class="box"/>
+          <text x="934" y="344" class="t-small c-accent">Provenance</text>
+          <text x="934" y="364" class="t-sub">write_plan / record_claims</text>
+          <text x="934" y="382" class="t-sub">register_artifact</text>
+
+          <rect x="920" y="425" width="260" height="80" rx="8" class="box"/>
+          <text x="934" y="449" class="t-small c-accent">Cost</text>
+          <text x="934" y="469" class="t-sub">token / 成本</text>
+          <text x="934" y="487" class="t-sub">按 Anthropic 价；DeepSeek 失真</text>
+
+          <rect x="920" y="530" width="260" height="80" rx="8" class="box"/>
+          <text x="934" y="554" class="t-small c-accent">Session</text>
+          <text x="934" y="574" class="t-sub">session_id / resume / fork</text>
+          <text x="934" y="592" class="t-sub">恢复与审计</text>
+
+          <rect x="920" y="635" width="260" height="80" rx="8" class="box"/>
+          <text x="934" y="659" class="t-small c-accent">Workspace</text>
+          <text x="934" y="679" class="t-sub">work/&lt;agent&gt;/</text>
+          <text x="934" y="697" class="t-sub">每个 Agent 独立子树</text>
+
+          <rect x="920" y="740" width="260" height="80" rx="8" class="box"/>
+          <text x="934" y="764" class="t-small c-accent">Verify</text>
+          <text x="934" y="784" class="t-sub">verify / replay / audit</text>
+          <text x="934" y="802" class="t-sub">完整性 ≠ 科学正确</text>
+
+          <text x="600" y="950" text-anchor="middle" class="t-sub">1 个运行时 · 11 个 Subagent 定义 · 12 个 MCP server · 1 条审计链</text>
+        </svg>
+      </div>
+      <figcaption>CSO 负责编排。11 个 Subagent 负责执行。MCP 客户端负责工具路由。右侧治理层负责权限、审计、成本、会话和工作区。</figcaption>
+    </figure>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>Layer 2 · 后端架构</h2>
+      <p>左边是工具与数据。右边是模型、计算和存储。数据留在本地，模型只看到 token。</p>
+    </div>
+    <figure class="figure">
+      <div class="diagram-scroll">
+        <svg class="diagram" viewBox="0 0 1200 780" role="img" aria-label="后端架构：CLI 进入 Claude Code 运行时，运行时连接 MCP 客户端、12 个 MCP server 与数据源，同时连接模型 API、计算资源和存储">
+          <defs>
+            <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--fg)"/>
+            </marker>
+          </defs>
+
+          <rect x="460" y="20" width="280" height="50" rx="8" class="box box-accent"/>
+          <text x="600" y="50" text-anchor="middle" class="t-title-sm">科学家 / CLI / Web UI</text>
+          <path d="M600 70 L600 110" class="flow" marker-end="url(#ar2)"/>
+
+          <rect x="430" y="110" width="340" height="80" rx="8" class="box box-accent"/>
+          <text x="600" y="140" text-anchor="middle" class="t-title c-accent">Claude Code 运行时</text>
+          <text x="600" y="160" text-anchor="middle" class="t-sub">1 个子进程 · Agent 循环 · 11 个 Subagent 定义</text>
+          <text x="600" y="178" text-anchor="middle" class="t-meta">session_id · max_turns=100</text>
+
+          <!-- left: MCP -->
+          <path d="M430 150 L300 150 L300 230" class="flow" marker-end="url(#ar2)"/>
+          <text x="308" y="144" class="t-meta">tool_use</text>
+          <rect x="40" y="230" width="520" height="60" rx="8" class="box box-target"/>
+          <text x="300" y="256" text-anchor="middle" class="t-box c-target">MCP 客户端</text>
+          <text x="300" y="274" text-anchor="middle" class="t-sub">stdio / SSE / HTTP · 工具发现与路由</text>
+
+          <path d="M300 290 L300 320" class="flow" marker-end="url(#ar2)"/>
+          <rect x="40" y="320" width="520" height="180" rx="8" class="box box-target"/>
+          <text x="54" y="344" class="t-col c-target">12 个 MCP server</text>
+          <rect x="54" y="356" width="140" height="30" rx="5" class="chip-svg"/><text x="64" y="376" class="chip-text">expression</text>
+          <rect x="210" y="356" width="140" height="30" rx="5" class="chip-svg"/><text x="220" y="376" class="chip-text">functional_genomics</text>
+          <rect x="366" y="356" width="140" height="30" rx="5" class="chip-svg"/><text x="376" y="376" class="chip-text">genetics</text>
+          <rect x="54" y="396" width="140" height="30" rx="5" class="chip-svg"/><text x="64" y="416" class="chip-text">target</text>
+          <rect x="210" y="396" width="140" height="30" rx="5" class="chip-svg"/><text x="220" y="416" class="chip-text">drug</text>
+          <rect x="366" y="396" width="140" height="30" rx="5" class="chip-svg"/><text x="376" y="416" class="chip-text">single_cell</text>
+          <rect x="54" y="436" width="140" height="30" rx="5" class="chip-svg"/><text x="64" y="456" class="chip-text">association</text>
+          <rect x="210" y="436" width="140" height="30" rx="5" class="chip-svg"/><text x="220" y="456" class="chip-text">disease</text>
+          <rect x="366" y="436" width="140" height="30" rx="5" class="chip-svg"/><text x="376" y="456" class="chip-text">interaction</text>
+          <rect x="54" y="476" width="140" height="30" rx="5" class="chip-svg"/><text x="64" y="496" class="chip-text">pathway</text>
+          <rect x="210" y="476" width="140" height="30" rx="5" class="chip-svg"/><text x="220" y="496" class="chip-text">clinicaltrials</text>
+          <rect x="366" y="476" width="140" height="30" rx="5" class="chip-svg"/><text x="376" y="496" class="chip-text">provenance</text>
+
+          <path d="M300 500 L300 530" class="flow" marker-end="url(#ar2)"/>
+          <text x="308" y="522" class="t-meta">查询</text>
+          <rect x="40" y="530" width="520" height="180" rx="8" class="box box-clinical"/>
+          <text x="54" y="554" class="t-col c-clinical">数据源</text>
+          <rect x="54" y="566" width="240" height="66" rx="6" class="box"/>
+          <text x="66" y="588" class="t-small c-clinical">Open Targets 25.09</text>
+          <text x="66" y="606" class="t-sub">~40GB parquet · 本地</text>
+          <text x="66" y="622" class="t-sub">CC0</text>
+          <rect x="310" y="566" width="236" height="66" rx="6" class="box"/>
+          <text x="322" y="588" class="t-small c-clinical">CELLxGENE Census</text>
+          <text x="322" y="606" class="t-sub">远程 · 网络</text>
+          <text x="322" y="622" class="t-sub">单细胞图谱</text>
+          <rect x="54" y="642" width="240" height="56" rx="6" class="box"/>
+          <text x="66" y="664" class="t-small c-clinical">ClinicalTrials / PubMed</text>
+          <text x="66" y="682" class="t-sub">远程 · 网络</text>
+          <rect x="310" y="642" width="236" height="56" rx="6" class="box"/>
+          <text x="322" y="664" class="t-small c-clinical">Tahoe-100M</text>
+          <text x="322" y="682" class="t-sub">可选 · ~83GiB · 本地</text>
+
+          <!-- right: model -->
+          <path d="M770 150 L900 150 L900 230" class="flow" marker-end="url(#ar2)"/>
+          <text x="908" y="144" class="t-meta">HTTPS /v1/messages</text>
+          <rect x="640" y="230" width="520" height="120" rx="8" class="box box-modality"/>
+          <text x="664" y="258" class="t-box c-modality">模型 API</text>
+          <text x="664" y="282" class="t-sub">DeepSeek V4.1 Flash</text>
+          <text x="664" y="302" class="t-sub">Anthropic 兼容端点：/anthropic</text>
+          <text x="664" y="322" class="t-sub">1M context · 384K output · 2,500 并发</text>
+
+          <rect x="640" y="380" width="520" height="130" rx="8" class="box"/>
+          <text x="664" y="406" class="t-box">计算</text>
+          <text x="664" y="430" class="t-sub">WSL2 Ubuntu 26.04 · 24 核 · 70GiB RAM</text>
+          <text x="664" y="452" class="t-sub">636GB 可用磁盘 · 无 GPU 需求</text>
+          <text x="664" y="474" class="t-sub">Python 3.11 + R 4.4.3 + rpy2</text>
+          <text x="664" y="496" class="t-sub">可选：Apptainer / SLURM</text>
+
+          <rect x="640" y="540" width="520" height="170" rx="8" class="box"/>
+          <text x="664" y="568" class="t-box">存储</text>
+          <text x="664" y="594" class="t-sub">sessions/&lt;SESSION_ID&gt;/</text>
+          <text x="664" y="614" class="t-sub">runs/&lt;RUN_ID&gt;/ · report / plan / manifest</text>
+          <text x="664" y="634" class="t-sub">work/&lt;agent&gt;/ · 每个 Agent 独立子树</text>
+          <text x="664" y="654" class="t-sub">data/open_targets/ · ~40GB</text>
+          <text x="664" y="674" class="t-sub">mcp_outputs/</text>
+
+          <text x="600" y="748" text-anchor="middle" class="t-sub">数据留在本地。模型只接收 token。API key 放在 .env。</text>
+        </svg>
+      </div>
+      <figcaption>后端不是微服务集群。它是单机运行时加本地数据、远程模型和 12 个工具服务。40GB 数据在磁盘上，模型在 API 后面。</figcaption>
+    </figure>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>一次提问的完整路径</h2>
+      <p>从你按回车，到报告落到磁盘。</p>
+    </div>
+    <ol class="steps">
+      <li><span class="n">01</span><div><strong>你输入问题</strong><span>CLI 读取 .env、MCP 配置、Open Targets 路径。</span></div></li>
+      <li><span class="n">02</span><div><strong>SDK 启动运行时</strong><span>一个 ClaudeSDKClient 拉起一个 Claude Code 子进程。</span></div></li>
+      <li><span class="n">03</span><div><strong>CSO 先澄清</strong><span>它可能问疾病范围、证据优先级、交付物。</span></div></li>
+      <li><span class="n">04</span><div><strong>CSO 写 Plan DAG</strong><span>validate_plan 检查依赖、重复 id、环。</span></div></li>
+      <li><span class="n">05</span><div><strong>CSO 委派</strong><span>通过 Agent 工具调用 11 个 Subagent 中的若干。</span></div></li>
+      <li><span class="n">06</span><div><strong>Subagent 拿到自己的配置</strong><span>独立提示、工具白名单、模型、effort、工作区。</span></div></li>
+      <li><span class="n">07</span><div><strong>Subagent 调工具</strong><span>通过 MCP 客户端调用 12 个 server 中的相关工具。</span></div></li>
+      <li><span class="n">08</span><div><strong>MCP server 查数据</strong><span>本地 parquet，或 ClinicalTrials、PubMed、CELLxGENE。</span></div></li>
+      <li><span class="n">09</span><div><strong>Subagent 写产物</strong><span>脚本、原始数据、处理后数据、图表、表格、报告。</span></div></li>
+      <li><span class="n">10</span><div><strong>Reviewer 审查</strong><span>只读检查科学严谨性。发现问题就触发重派。</span></div></li>
+      <li><span class="n">11</span><div><strong>CSO 汇总</strong><span>生成 report.md，record_claims 登记主张与证据。</span></div></li>
+      <li><span class="n">12</span><div><strong>verify 检查</strong><span>产物哈希、证据覆盖。它不判断科学结论对错。</span></div></li>
+      <li><span class="n">13</span><div><strong>你读报告</strong><span>/summary 看成本，/done 结束会话。</span></div></li>
+    </ol>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>你看到 vs 你看不到</h2>
+      <p>这是系统的抽象边界。你只需要第一列。</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>你看到</th><th>你看不到</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>终端提示符和澄清问题</td><td>11 个 Subagent 的独立上下文</td></tr>
+          <tr><td>委派进度和工具调用数</td><td>12 个 MCP server 的路由细节</td></tr>
+          <tr><td>report.md</td><td>40GB parquet 的查询过程</td></tr>
+          <tr><td>/summary 的成本行</td><td>每个 Agent 的 token 明细</td></tr>
+          <tr><td>verify 的通过或失败</td><td>trace.jsonl 里的完整轨迹</td></tr>
+          <tr><td>work/&lt;agent&gt;/ 的产物</td><td>Subagent 之间的上下文隔离</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>边界与限制</h2>
+      <p>面向科学家的诚实说明。</p>
+    </div>
+    <div class="cards">
+      <article class="card">
+        <span class="tag">界面</span>
+        <h3>CLI 是主界面</h3>
+        <p>Gradio 是可选。终端 transcript 是示意，不是实际输出。实际提示词和输出格式以仓库为准。</p>
+      </article>
+      <article class="card">
+        <span class="tag">验证</span>
+        <h3>verify 不等于科学正确</h3>
+        <p>它检查产物完整性和证据覆盖。它不判断靶点结论是否成立。</p>
+      </article>
+      <article class="card">
+        <span class="tag">实验</span>
+        <h3>没有湿实验</h3>
+        <p>所有结果是计算或回顾性分析。候选靶点仍需要实验验证。</p>
+      </article>
+      <article class="card">
+        <span class="tag">安全</span>
+        <h3>bypassPermissions 不是沙箱</h3>
+        <p>Agent 可以在宿主机执行工具。建议在隔离环境或容器里跑。</p>
+      </article>
+      <article class="card">
+        <span class="tag">成本</span>
+        <h3>成本追踪会失真</h3>
+        <p>仓库按 Anthropic 价表计算。DeepSeek 实际账单更低。以供应商账单为准。</p>
+      </article>
+      <article class="card">
+        <span class="tag">规模</span>
+        <h3>37,075 不属于这套 11 Agent</h3>
+        <p>那是独立的临床试验标注批处理。它复用 clinical-trialist 角色，但不是同一个会话。</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="callout">
+      <p><strong>一句话：</strong>你面对一个终端。CSO 面对 11 个 Subagent。Subagent 面对 12 个工具。工具面对本地数据和远程 API。模型只看到 token。</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>资料来源：</p>
+    <p><a href="https://github.com/harrisongzhang/TheVirtualBiotech">The Virtual Biotech</a> · <a href="https://github.com/harrisongzhang/TheVirtualBiotech/blob/main/README.md">README</a> · <a href="https://github.com/harrisongzhang/TheVirtualBiotech/blob/main/src/agents/registry.py">registry.py</a> · <a href="https://code.claude.com/docs/en/agent-sdk/agent-loop">Agent SDK · agent loop</a></p>
+  </footer>
+</main>
